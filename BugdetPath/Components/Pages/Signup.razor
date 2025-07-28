@@ -1,0 +1,59 @@
+@page "/Signup"
+
+<div class="signup-page">
+    <div class="signup-left">
+        <img src="images/Signup.png" alt="Signup illustration" class="signup-image" />
+    </div>
+    <div class="signup-right">
+        <div class="signup-card">
+            <h1 class="signup-title">WELCOME TO<br />EXPENSE TRACKER</h1>
+
+            <div class="signup-group">
+                <label for="FullName" class="signup-label">Full Name</label>
+                <input id="FullName" type="text" class="signup-input" placeholder="Enter your full name" />
+            </div>
+
+            <div class="signup-group">
+                <label for="Email" class="signup-label">Email</label>
+                <input id="Email" type="email" class="signup-input" placeholder="Enter your email" />
+            </div>
+
+            <div class="signup-group">
+                <label for="Password" class="signup-label">Password</label>
+                <input id="Password" type="password" class="signup-input" placeholder="Enter your password" />
+            </div>
+
+            <div class="signup-group">
+                <label for="Currency" class="signup-label">Currency</label>
+                <select id="Currency" class="signup-input">
+                    <option value="">Select your currency</option>
+                    <option value="USD">USD - US Dollar</option>
+                    <option value="NPR">NPR - Nepalese Rupee</option>
+                    <option value="EUR">EUR - Euro</option>
+                    <option value="INR">INR - Indian Rupee</option>
+                    <option value="GBP">GBP - British Pound</option>
+                </select>
+            </div>
+
+            <button type="button" class="signup-button">Sign Up</button>
+
+            <div class="signup-footer">
+                <span>Already have an account?</span>
+                <a href="/" class="signup-link">Sign In</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string FullName { get; set; } = string.Empty;
+    private string Password { get; set; } = string.Empty;
+    private string Currency { get; set; } = string.Empty;
+
+    private void RegisterUser()
+    {
+        // You can use FullName, Password, and Currency here
+        Console.WriteLine($"User: {FullName}, Password: {Password}, Currency: {Currency}");
+        // You can add logic here to send data to a service, validate inputs, etc.
+    }
+}

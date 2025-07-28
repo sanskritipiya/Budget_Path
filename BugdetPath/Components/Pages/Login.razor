@@ -1,0 +1,69 @@
+@page "/"
+
+@using BugdetPath.Services
+@inject NavigationManager NavigationManager
+@inject IUserService UserInfoService
+@inject AuthenticationStateService authStateService
+
+<div class="login-page">
+    <div class="login-left">
+        <img src="images/Login.png" alt="Login illustration" class="login-image" />
+    </div>
+    <div class="login-right">
+        <div class="login-card">
+            <h1 class="login-title">LOGIN</h1>
+            <div class="login-group">
+                <label for="Username" class="login-label">UserName</label>
+                <input id="Username" type="text" @bind="username" class="login-input" placeholder="Enter your username" />
+            </div>
+            <div class="login-group">
+                <label for="Password" class="login-label">Password</label>
+                <input id="Password" type="password" @bind="password" class="login-input" placeholder="Enter your password" />
+            </div>
+            <button type="button" class="login-button" @onclick="LoginUser">Login</button>
+
+            
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="login-error">@errorMessage</div>
+            }
+            
+            <div class="login-footer">
+                <span>Don't have an account?</span>
+                <a href="/Signup" class="login-link">Sign up</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string username { get; set; } = string.Empty;
+    private string password { get; set; } = string.Empty;
+    private string errorMessage { get; set; } = string.Empty;
+
+    private async Task LoginUser()
+    {
+        var user = await UserInfoService.LoadUsersAsync();
+
+        if (user != null)
+        {
+            NavigationManager.NavigateTo("/dashboard"); // Redirect to dashboard
+        }
+        else
+        {
+            errorMessage = "Invalid username or password.";
+        }
+    }
+
+
+    private string HashPassword(string password)
+    {
+        using (var sha256 = System.Security.Cryptography.SHA256.Create())
+        {
+            var bytes = System.Text.Encoding.UTF8.GetBytes(password);
+            
+            var hash = sha256.ComputeHash(bytes);
+            return Convert.ToBase64String(hash);
+        }
+    }
+}

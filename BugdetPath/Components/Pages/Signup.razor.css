@@ -1,0 +1,108 @@
+body {
+    background-color: #f7f7f7;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0; /* Remove default margin to push content to top */
+    padding: 0; /* Remove default padding */
+    box-sizing: border-box;
+}
+
+.signup-page {
+    display: flex;
+    width: 90%;
+    max-width: 1000px;
+    background-color: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    margin-top: 0; /* Ensure no top margin */
+}
+
+.signup-left {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background-color: #ffffff;
+}
+
+.signup-image {
+    width: 90%;
+    max-width: 400px;
+}
+
+.signup-right {
+    flex: 1;
+    background-color: #2a6da6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.signup-card {
+    width: 100%;
+    max-width: 350px;
+    padding: 40px 30px;
+    color: white;
+}
+
+.signup-title {
+    text-align: center;
+    font-size: 24px;
+    margin-bottom: 30px;
+    font-weight: bold;
+    line-height: 1.4;
+}
+
+.signup-group {
+    margin-bottom: 20px;
+}
+
+.signup-label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 6px;
+}
+
+.signup-input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: none;
+    font-size: 14px;
+    outline: none;
+}
+
+.signup-button {
+    width: 100%;
+    padding: 12px;
+    background-color: white;
+    color: #2a6da6;
+    font-weight: bold;
+    font-size: 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    margin-top: 10px;
+}
+
+.signup-button:hover {
+    background-color: #f0f0f0;
+}
+
+.signup-footer {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 13px;
+}
+
+.signup-link {
+    color: white;
+    margin-left: 5px;
+    text-decoration: underline;
+}
