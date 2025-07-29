@@ -4,14 +4,14 @@ namespace BugdetPath.Services;
 
 public class AuthenticationStateService
 {
-    private UserDetail authenticatedUser;
+    private User authenticatedUser;
 
-    public UserDetail GetAuthenticatedUser()
+    public User GetAuthenticatedUser()
     {
         return authenticatedUser;
     }
 
-    public void SetAuthenticatedUser(UserDetail user)
+    public void SetAuthenticatedUser(User user)
     {
         authenticatedUser = user;
     }
@@ -31,4 +31,5 @@ public class AuthenticationStateService
     }
 
 
+    
 }

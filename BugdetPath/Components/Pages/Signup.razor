@@ -1,4 +1,8 @@
 @page "/Signup"
+@using BugdetPath.Models
+@using BugdetPath.Services
+@inject IUserService UserInfoService
+@inject NavigationManager NavigationManager
 
 <div class="signup-page">
     <div class="signup-left">
@@ -10,22 +14,22 @@
 
             <div class="signup-group">
                 <label for="FullName" class="signup-label">Full Name</label>
-                <input id="FullName" type="text" class="signup-input" placeholder="Enter your full name" />
+                <input id="FullName" type="text" @bind="FullName" class="signup-input" placeholder="Enter your full name" />
             </div>
 
             <div class="signup-group">
-                <label for="Email" class="signup-label">Email</label>
-                <input id="Email" type="email" class="signup-input" placeholder="Enter your email" />
+                <label for="Email" class="signup-label">Username / Email</label>
+                <input id="Email" type="email" @bind="UserName" class="signup-input" placeholder="Enter your email or username" />
             </div>
 
             <div class="signup-group">
                 <label for="Password" class="signup-label">Password</label>
-                <input id="Password" type="password" class="signup-input" placeholder="Enter your password" />
+                <input id="Password" type="password" @bind="Password" class="signup-input" placeholder="Enter your password" />
             </div>
 
             <div class="signup-group">
                 <label for="Currency" class="signup-label">Currency</label>
-                <select id="Currency" class="signup-input">
+                <select id="Currency" class="signup-input" @bind="Currency">
                     <option value="">Select your currency</option>
                     <option value="USD">USD - US Dollar</option>
                     <option value="NPR">NPR - Nepalese Rupee</option>
@@ -35,7 +39,12 @@
                 </select>
             </div>
 
-            <button type="button" class="signup-button">Sign Up</button>
+            <button type="button" class="signup-button" @onclick="RegisterUser">Sign Up</button>
+
+            @if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <div class="signup-error">@ErrorMessage</div>
+            }
 
             <div class="signup-footer">
                 <span>Already have an account?</span>
@@ -47,13 +56,35 @@
 
 @code {
     private string FullName { get; set; } = string.Empty;
+    private string UserName { get; set; } = string.Empty;
     private string Password { get; set; } = string.Empty;
     private string Currency { get; set; } = string.Empty;
+    private string ErrorMessage { get; set; } = string.Empty;
 
-    private void RegisterUser()
+    private async Task RegisterUser()
     {
-        // You can use FullName, Password, and Currency here
-        Console.WriteLine($"User: {FullName}, Password: {Password}, Currency: {Currency}");
-        // You can add logic here to send data to a service, validate inputs, etc.
+        if (string.IsNullOrWhiteSpace(UserName) || string.IsNullOrWhiteSpace(Password))
+        {
+            ErrorMessage = "Username and password are required.";
+            return;
+        }
+
+        var newUser = new User
+        {
+            UserName = UserName,
+            Password = Password, // Will be hashed in the service
+            Name = FullName,
+            PreferredCurrency = Currency
+        };
+
+        var success = await UserInfoService.RegisterUserAsync(newUser);
+        if (success)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+        else
+        {
+            ErrorMessage = "Username is already taken.";
+        }
     }
 }

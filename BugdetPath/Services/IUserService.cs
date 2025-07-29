@@ -4,7 +4,17 @@ namespace BugdetPath.Services;
 
 public interface IUserService
 {
-    Task SaveUserAsync(UserDetail user);
+        Task<bool> RegisterUserAsync(User user);
         
-    Task<List<UserDetail>> LoadUsersAsync();
+        Task<List<User>> LoadUsersAsync();
+        
+        Task SaveUserAsync(User user);
+        
+        Task<User?> LoginAsync(string username, string password);
+                
+
+    
+
+        
+   
 }

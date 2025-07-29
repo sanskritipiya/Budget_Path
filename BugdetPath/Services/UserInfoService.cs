@@ -3,84 +3,110 @@ using System.Text;
 using System.Text.Json;
 using BugdetPath.Models;
 
-namespace BugdetPath.Services;
-
+namespace BugdetPath.Services
+{
     public class UserInfoService : IUserService
     {
         private readonly string _usersFilePath = Path.Combine(FileSystem.Current.AppDataDirectory, "UserDetails.json");
 
-        //save a new user to the system 
-        public async Task SaveUserAsync(UserDetail user)
+        public async Task<bool> RegisterUserAsync(User user)
         {
             try
             {
                 var allUsers = await LoadUsersAsync();
 
-                // Auto-assign ID if needed
-                user.Id = allUsers.Count > 0 ? allUsers.Max(u => u.Id) + 1 : 1;
+                if (allUsers.Any(u => u.UserName == user.UserName))
+                    return false; // Username already taken
 
-                // Secure the password
+                user.Id = allUsers.Any() ? allUsers.Max(u => u.Id) + 1 : 1;
                 user.Password = HashPassword(user.Password);
 
                 allUsers.Add(user);
+                await SaveUsersAsync(allUsers);
 
-                await SaveUserAsync(allUsers);
+                return true;
             }
-            
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred while saving the user: {ex.Message}");
+                Console.WriteLine($"Registration error: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<User?> LoginAsync(string username, string password)
+        {
+            try
+            {
+                var allUsers = await LoadUsersAsync();
+                var hashed = HashPassword(password);
+
+                return allUsers.FirstOrDefault(u => u.UserName == username && u.Password == hashed);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Login error: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task<List<User>> LoadUsersAsync()
+        {
+            try
+            {
+                if (!File.Exists(_usersFilePath))
+                    return new List<User>();
+
+                var jsonText = await File.ReadAllTextAsync(_usersFilePath);
+                return JsonSerializer.Deserialize<List<User>>(jsonText) ?? new List<User>();
+            }
+            catch
+            {
+                return new List<User>();
+            }
+        }
+
+        public async Task SaveUserAsync(User user)
+        {
+            try
+            {
+                var allUsers = await LoadUsersAsync();
+
+                var existingUser = allUsers.FirstOrDefault(u => u.Id == user.Id);
+                if (existingUser != null)
+                {
+                    existingUser.UserName = user.UserName;
+                    existingUser.Password = user.Password; // Assume password already hashed if updating
+                    // Update other fields if you have more properties
+                }
+                else
+                {
+                    user.Id = allUsers.Any() ? allUsers.Max(u => u.Id) + 1 : 1;
+                    user.Password = HashPassword(user.Password);
+                    allUsers.Add(user);
+                }
+
+                await SaveUsersAsync(allUsers);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"SaveUserAsync error: {ex.Message}");
                 throw;
             }
         }
 
-        public async Task<List<UserDetail>> LoadUsersAsync()
+        // Save all users to file
+        private async Task SaveUsersAsync(List<User> users)
         {
-            try
-            {
-                var jsonText = await File.ReadAllTextAsync(_usersFilePath);
-                
-                return JsonSerializer.Deserialize<List<UserDetail>>(jsonText) ?? new List<UserDetail>();
-            }
-            catch (JsonException jex)
-            {
-                Console.WriteLine($"Error parsing JSON data: {jex.Message}");
-                return new List<UserDetail>();
-            }
-            catch (IOException ioex)
-            {
-                Console.WriteLine($"File access error: {ioex.Message}");
-                return new List<UserDetail>();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Unexpected error: {ex.Message}");
-                return new List<UserDetail>();
-            }
-        }
-
-        private async Task SaveUserAsync(List<UserDetail> users)
-        {
-            try
-            {
-               var json = JsonSerializer.Serialize(users, new JsonSerializerOptions { WriteIndented = true });
-                await File.WriteAllTextAsync(_usersFilePath, json);
-            }
-            catch (Exception e)
-            {
-                        Console.WriteLine(e);
-                        throw;
-            }
+            var json = JsonSerializer.Serialize(users, new JsonSerializerOptions { WriteIndented = true });
+            await File.WriteAllTextAsync(_usersFilePath, json);
         }
 
         private string HashPassword(string password)
         {
             using var sha = SHA256.Create();
-            
             var bytes = Encoding.UTF8.GetBytes(password);
-            
-            var hashed = sha.ComputeHash(bytes);
-            
-            return Convert.ToBase64String(hashed);
+            var hash = sha.ComputeHash(bytes);
+            return Convert.ToBase64String(hash);
         }
     }
+}
