@@ -2,16 +2,17 @@ using BugdetPath.Models;
 
 namespace BugdetPath.Services;
 
-public class AuthenticationStateService
+public class AuthenticationService
 {
+    private const string StorageKey = "authenticated_user";
     private User authenticatedUser;
 
-    public User GetAuthenticatedUser()
+    public async Task<User> GetAuthenticatedUserAsync()
     {
         return authenticatedUser;
     }
 
-    public void SetAuthenticatedUser(User user)
+    public void SetAuthenticatedUserAsync(User user)
     {
         authenticatedUser = user;
     }
