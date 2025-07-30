@@ -1,0 +1,328 @@
+@page "/transaction"
+@using BugdetPath.Models
+@using BugdetPath.Services
+@inject ITransactionService TransactionService
+@inject AuthenticationService AuthenticationService
+
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <h1>All Transactions</h1>
+            <p>Manage and track your financial transactions</p>
+        </div>
+        <button class="btn btn-primary">
+            <span class="icon">+</span>
+            Add Transaction
+        </button>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Filters & Search</h2>
+        </div>
+        <div class="card-content">
+            <div class="search-container">
+                <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                <input type="text" class="search-input" placeholder="Search transactions..." value="@SearchTerm" @oninput="OnSearchChanged" />
+            </div>
+
+            <div class="filters-grid">
+                <div class="form-group">
+                    <label class="form-label">Transaction Type</label>
+                    <select class="form-select" @bind="SelectedType" @onchange="OnFilterChanged">
+                        <option value="">All Types</option>
+                        <option value="Income">Income</option>
+                        <option value="Expense">Expense</option>
+                        <option value="Debt">Debt</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tags</label>
+                    <select class="form-select" @bind="SelectedTag" @onchange="OnFilterChanged">
+                        <option value="">All Tags</option>
+                        @if (availableTags != null)
+                        {
+                            foreach (var tag in availableTags)
+                            {
+                                <option value="@tag">@tag</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">From Date</label>
+                    <input type="date" class="form-input" @bind="FromDate" @onchange="OnFilterChanged" max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">To Date</label>
+                    <input type="date" class="form-input" @bind="ToDate" @onchange="OnFilterChanged" max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-outline" @onclick="ToggleDateSort">
+                    <span class="icon">@(SortAscending ? "↑" : "↓")</span>
+                    Sort by Date @(SortAscending ? "(Oldest First)" : "(Newest First)")
+                </button>
+                <button class="btn btn-outline" @onclick="SortByAmount">
+                    <span class="icon">💰</span>
+                    Sort by Amount
+                </button>
+                <button class="btn btn-outline" @onclick="ClearFilters">
+                    <span class="icon">⚡</span>
+                    Clear Filters
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="card">
+            <div class="card-content">
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <p>Loading transactions...</p>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Transaction Summary</h2>
+            </div>
+            <div class="card-content">
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <span class="summary-label">Total Transactions:</span>
+                        <span class="summary-value">@filteredTransactions.Count</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Total Income:</span>
+                        <span class="summary-value amount-positive">+@totalIncome.ToString("N2")</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Total Expenses:</span>
+                        <span class="summary-value amount-negative">-@Math.Abs(totalExpenses).ToString("N2")</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Net Amount:</span>
+                        <span class="summary-value @(netAmount >= 0 ? "amount-positive" : "amount-negative")">
+                            @(netAmount >= 0 ? "+" : "")$@netAmount.ToString("N2")
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Transaction History</h2>
+            </div>
+            <div class="card-content">
+                @if (filteredTransactions.Any())
+                {
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th @onclick="() => SortBy("title")" class="sortable">
+                                        Title @(currentSortBy == "title" ? "" : null)
+                                    </th>
+                                    <th @onclick="() => SortBy("amount")" class="text-right sortable">
+                                        Amount @(currentSortBy == "amount" ? "" : null)
+                                    </th>
+                                    <th>Notes</th>
+                                    <th>Tags</th>
+                                    <th @onclick="() => SortBy("date")" class="sortable">
+                                        Date @(currentSortBy == "date" ? "" : null)
+                                    </th>
+                                    <th @onclick="() => SortBy("type")" class="sortable">
+                                        Type @(currentSortBy == "type" ? "" : null)
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var transaction in filteredTransactions)
+                                {
+                                    <tr>
+                                        <td>@transaction.Id</td>
+                                        <td><strong>@transaction.Title</strong></td>
+                                        <td class="text-right @(GetAmountClass(transaction))">@FormatAmount(transaction)</td>
+                                        <td class="text-muted">@(!string.IsNullOrWhiteSpace(transaction.Notes) ? transaction.Notes : "---")</td>
+                                        <td>
+                                            @if (!string.IsNullOrWhiteSpace(transaction.Tag))
+                                            {
+                                                <span class="badge badge-outline">@transaction.Tag</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">---</span>
+                                            }
+                                        </td>
+                                        <td class="text-muted">@transaction.Date.ToString("MM/dd/yyyy")</td>
+                                        <td><span class="badge @GetTypeBadgeClass(transaction.Type)">@transaction.Type.ToUpper()</span></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="no-data">
+                        <svg class="no-data-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <h3>No transactions found</h3>
+                        <p>Try adjusting your filters or search criteria.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<TransactionDetails> allTransactions = new();
+    private List<TransactionDetails> filteredTransactions = new();
+    private List<string> availableTags = new();
+    private bool isLoading = true;
+
+    private string SearchTerm = "";
+    private string SelectedType = "";
+    private string SelectedTag = "";
+    private DateTime? FromDate = null;
+    private DateTime? ToDate = null;
+
+    private string currentSortBy = "date";
+    private bool SortAscending = false;
+
+    private decimal totalIncome => filteredTransactions.Where(t => t.Type == "Income").Sum(t => t.Amount);
+    private decimal totalExpenses => filteredTransactions.Where(t => t.Type == "Expense").Sum(t => t.Amount);
+    private decimal totalDebt => filteredTransactions.Where(t => t.Type == "Debt").Sum(t => t.Amount);
+    private decimal netAmount => totalIncome - Math.Abs(totalExpenses) - Math.Abs(totalDebt);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTransactions();
+    }
+
+    private async Task LoadTransactions()
+    {
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            allTransactions = await TransactionService.FetchAllTransactionsAsync();
+            availableTags = await TransactionService.GetUniqueTagsAsync();
+            await ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading transactions: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        filteredTransactions = await TransactionService.FilterTransactionsAsync(
+            searchTerm: SearchTerm,
+            type: SelectedType,
+            tag: SelectedTag,
+            fromDate: FromDate,
+            toDate: ToDate,
+            sortBy: currentSortBy,
+            ascending: SortAscending
+        );
+        StateHasChanged();
+    }
+
+    private async Task OnFilterChanged() => await ApplyFilters();
+
+    private async Task OnSearchChanged(ChangeEventArgs e)
+    {
+        SearchTerm = e.Value?.ToString() ?? "";
+        await ApplyFilters();
+    }
+
+    private async Task SortBy(string sortBy)
+    {
+        if (currentSortBy == sortBy)
+            SortAscending = !SortAscending;
+        else
+        {
+            currentSortBy = sortBy;
+            SortAscending = sortBy == "title";
+        }
+
+        await ApplyFilters();
+    }
+
+    private async Task ToggleDateSort()
+    {
+        currentSortBy = "date";
+        SortAscending = !SortAscending;
+        await ApplyFilters();
+    }
+
+    private async Task SortByAmount()
+    {
+        currentSortBy = "amount";
+        SortAscending = !SortAscending;
+        await ApplyFilters();
+    }
+
+    private async Task ClearFilters()
+    {
+        SearchTerm = "";
+        SelectedType = "";
+        SelectedTag = "";
+        FromDate = null;
+        ToDate = null;
+        currentSortBy = "date";
+        SortAscending = false;
+
+        await ApplyFilters();
+    }
+
+    private string GetAmountClass(TransactionDetails transaction) =>
+        transaction.Type switch
+        {
+            "Income" => "amount-positive",
+            "Expense" => "amount-negative",
+            "Debt" => "amount-negative",
+            _ => ""
+        };
+
+    private string FormatAmount(TransactionDetails transaction) =>
+        transaction.Type switch
+        {
+            "Income" => "+$" + transaction.Amount.ToString("N2"),
+            "Expense" => "-$" + Math.Abs(transaction.Amount).ToString("N2"),
+            "Debt" => "-$" + Math.Abs(transaction.Amount).ToString("N2"),
+            _ => "$" + transaction.Amount.ToString("N2")
+        };
+
+    private string GetTypeBadgeClass(string type) =>
+        type.ToLower() switch
+        {
+            "income" => "badge-income",
+            "expense" => "badge-expense",
+            "debt" => "badge-debt",
+            _ => "badge-outline"
+        };
+}

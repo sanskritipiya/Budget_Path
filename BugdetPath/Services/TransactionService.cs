@@ -1,4 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using BugdetPath.Models;
 using BugdetPath.Services;
 
@@ -14,19 +18,23 @@ namespace BugdetPath.Services
         private readonly string dataPath;
 
         public TransactionService(
-            IInflowService incomeService,
-            IOutflowService expensesService,
+            IInflowService inflowService,
+            IOutflowService outflowService,
             IDebtService debtService,
             AuthenticationService authService)
         {
-            this.inflowService = incomeService;
-            this.outflowService = expensesService;
+            this.inflowService = inflowService;
+            this.outflowService = outflowService;
             this.debtService = debtService;
             this.authService = authService;
 
-            // macOS-compatible file location for user data
-            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            dataPath = Path.Combine(appData, "Budgetify", "transactions");
+            // Use 'data' folder inside ApplicationData for compatibility
+            var appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "data");
+
+            if (!Directory.Exists(appData))
+                Directory.CreateDirectory(appData);
+
+            dataPath = Path.Combine(appData, "transactions");
 
             if (!Directory.Exists(dataPath))
                 Directory.CreateDirectory(dataPath);

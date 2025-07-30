@@ -25,7 +25,7 @@ public static class MauiProgram
         
         builder.Services.AddSingleton<ITransactionService, TransactionService>();
      
-        builder.Services.AddScoped<AuthenticationService>();
+        builder.Services.AddSingleton<AuthenticationService>();
 
 
 #if DEBUG

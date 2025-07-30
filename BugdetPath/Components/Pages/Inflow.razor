@@ -6,30 +6,46 @@
 
 <div class="form-container">
     <h1 class="form-title">Inflow</h1>
-    <EditForm OnValidSubmit="HandleSubmit">
+
+    @* Success/Error Messages *@
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <div class="alert alert-success" role="alert">
+            @SuccessMessage
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            @ErrorMessage
+        </div>
+    }
+
+    <EditForm Model="@IncomeForm" OnValidSubmit="HandleSubmit">
         <div class="form-group">
             <label class="form-label" for="title">Title</label>
-            <input type="text" id="title" class="form-input" @bind="Title" required />
+            <input type="text" id="title" class="form-input" @bind="IncomeForm.Title" required />
         </div>
 
         <div class="form-group">
             <label class="form-label" for="amount">Amount</label>
-            <input type="number" id="amount" class="form-input" @bind="Amount" step="0.01" required />
+            <input type="number" id="amount" class="form-input" @bind="IncomeForm.Amount" step="0.01" required />
         </div>
 
         <div class="form-group">
             <label class="form-label" for="notes">Notes</label>
-            <textarea id="notes" class="form-input form-textarea" @bind="Notes"></textarea>
+            <textarea id="notes" class="form-input form-textarea" @bind="IncomeForm.Notes"></textarea>
         </div>
 
         <div class="form-group">
             <label class="form-label" for="date">Date</label>
-            <input type="date" id="date" class="form-input" @bind="Date" required />
+            <input type="date" id="date" class="form-input" @bind="IncomeForm.Date" @bind:format="yyyy-MM-dd" required />
         </div>
 
         <div class="form-group">
             <label class="form-label" for="tags">Tags</label>
-            <select id="tags" class="form-select" @bind="SelectedTag">
+            <select id="tags" class="form-select" @bind="SelectedTag" required>
                 <option value="">Select a tag</option>
                 <option value="Yearly">Yearly</option>
                 <option value="Monthly">Monthly</option>
@@ -38,62 +54,92 @@
                 <option value="Clothes">Clothes</option>
                 <option value="other">Other</option>
             </select>
+
+            
         </div>
 
-        @if (!IsCustomTagDisabled)
+
+        @if (SelectedTag == "other")
         {
-            <div class="form-group d-flex align-items-center gap-2">
+            <div class="form-group d-flex align-items-center gap-2 mt-2">
                 <input type="text" id="customTags" class="form-control" @bind="CustomTag" placeholder="Enter custom tag" />
-                <button type="button" class="btn btn-success btn-sm" @onclick="ConfirmCustomTag">Add</button>
+                <button type="button" class="btn btn-success btn-sm" @onclick="ConfirmCustomTag" disabled="@string.IsNullOrWhiteSpace(CustomTag)">Add</button>
                 <button type="button" class="btn btn-secondary btn-sm" @onclick="CancelCustomTag">Cancel</button>
             </div>
         }
 
-        <button type="submit" class="submit-btn">Add Income</button>
+        <button type="submit" class="submit-btn mt-3" disabled="@IsSubmitting">
+            @if (IsSubmitting)
+            {
+                <span>Adding Income...</span>
+            }
+            else
+            {
+                <span>Add Income</span>
+            }
+        </button>
     </EditForm>
 </div>
 
-@if (Incomes.Any())
-{
+@* Income Table Section *@
+<div class="income-section mt-4">
     <h2 class="table-heading">Your Income</h2>
-    <table class="income-table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Title</th>
-                <th>Amount</th>
-                <th>Date</th>
-                <th>Tag</th>
-                <th>Notes</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var income in Incomes)
-            {
+    
+    @if (IsLoading)
+    {
+        <div class="loading-message">
+            <p>Loading your income records...</p>
+        </div>
+    }
+    else if (Incomes.Any())
+    {
+        <table class="income-table">
+            <thead>
                 <tr>
-                    <td>@income.Id</td>
-                    <td>@income.Title</td>
-                    <td>@income.Amount</td>
-                    <td>@income.Date.ToShortDateString()</td>
-                    <td>@income.Tag</td>
-                    <td>@income.Notes</td>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                    <th>Tag</th>
+                    <th>Notes</th>
                 </tr>
-            }
-        </tbody>
-    </table>
-}
+            </thead>
+            <tbody>
+                @foreach (var income in Incomes)
+                {
+                    <tr>
+                        <td>@income.Id</td>
+                        <td>@income.Title</td>
+                        <td>$@income.Amount.ToString("F2")</td>
+                        <td>@income.Date.ToShortDateString()</td>
+                        <td>@income.Tag</td>
+                        <td>@income.Notes</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="no-income-message text-muted">
+            <p>No income records found. Add your first income record using the form above.</p>
+        </div>
+    }
+</div>
 
 @code {
-    private string Title { get; set; } = string.Empty;
-    private decimal Amount { get; set; }
-    private string Notes { get; set; } = string.Empty;
-    private DateTime Date { get; set; } = DateTime.Today;
+    private IncomeDetails IncomeForm = new() { Date = DateTime.Today };
+    private List<IncomeDetails> Incomes = new();
+
     private string SelectedTag { get; set; } = string.Empty;
     private string CustomTag { get; set; } = string.Empty;
     private string Tag { get; set; } = string.Empty;
-    private List<IncomeDetails> Incomes = new();
 
-    private bool IsCustomTagDisabled => SelectedTag != "other";
+    private string SuccessMessage { get; set; } = string.Empty;
+    private string ErrorMessage { get; set; } = string.Empty;
+
+    private bool IsLoading { get; set; } = true;
+    private bool IsSubmitting { get; set; } = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -104,6 +150,9 @@
     {
         try
         {
+            IsLoading = true;
+            ClearMessages();
+
             var user = await AuthenticationService.GetAuthenticatedUserAsync();
             if (user != null)
             {
@@ -111,22 +160,32 @@
             }
             else
             {
-                Console.WriteLine("User is not authenticated.");
+                ErrorMessage = "User is not authenticated. Please log in to view your income records.";
             }
         }
         catch (Exception ex)
         {
+            ErrorMessage = "Failed to load income records. Please try again.";
             Console.WriteLine($"Error loading incomes: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
         }
     }
 
     private void OnTagChanged(ChangeEventArgs e)
     {
-        SelectedTag = e.Value?.ToString() ?? "";
+        SelectedTag = e.Value?.ToString();
+
         if (SelectedTag != "other")
         {
             CustomTag = string.Empty;
             Tag = SelectedTag;
+        }
+        else
+        {
+            Tag = string.Empty;
         }
     }
 
@@ -149,44 +208,52 @@
     {
         try
         {
+            IsSubmitting = true;
+            ClearMessages();
+
             var user = await AuthenticationService.GetAuthenticatedUserAsync();
             if (user != null)
             {
-                var tagToSave = SelectedTag == "other" ? CustomTag : SelectedTag;
+                IncomeForm.Tag = Tag;
+                IncomeForm.UserId = user.Id;
 
-                var income = new IncomeDetails
-                {
-                    Title = Title,
-                    Amount = Amount,
-                    Date = Date,
-                    Tag = tagToSave,
-                    Notes = Notes,
-                    UserId = user.Id
-                };
+                await InflowService.SaveInflowAsync(IncomeForm);
 
-                await InflowService.SaveInflowAsync(income);
-                await LoadIncomesAsync();
+                var savedTitle = IncomeForm.Title;
+
                 ClearForm();
+
+                SuccessMessage = $"Income '{savedTitle}' added successfully!";
+
+                await LoadIncomesAsync();
             }
             else
             {
-                Console.WriteLine("User is not authenticated.");
+                ErrorMessage = "User is not authenticated. Please log in to add income.";
             }
         }
         catch (Exception ex)
         {
+            ErrorMessage = "Failed to add income. Please check your input and try again.";
             Console.WriteLine($"Error saving income: {ex.Message}");
+        }
+        finally
+        {
+            IsSubmitting = false;
         }
     }
 
     private void ClearForm()
     {
-        Title = string.Empty;
-        Amount = 0;
-        Notes = string.Empty;
-        Date = DateTime.Today;
+        IncomeForm = new IncomeDetails { Date = DateTime.Today };
         SelectedTag = string.Empty;
         CustomTag = string.Empty;
         Tag = string.Empty;
+    }
+
+    private void ClearMessages()
+    {
+        SuccessMessage = string.Empty;
+        ErrorMessage = string.Empty;
     }
 }

@@ -1,5 +1,201 @@
-<h3>Debt</h3>
+@page "/debt"
+@using BugdetPath.Models
+@using BugdetPath.Services
+@inject IDebtService DebtService
+@inject AuthenticationService AuthenticationService
+
+<h1 class="form-title">Debt</h1>
+
+@if (!string.IsNullOrEmpty(SuccessMessage))
+{
+    <div class="alert alert-success">@SuccessMessage</div>
+}
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <div class="alert alert-danger">@ErrorMessage</div>
+}
+
+<EditForm Model="@debtModel" OnValidSubmit="HandleValidSubmit">
+    <div class="form-group">
+        <label for="title">Title</label>
+        <InputText id="title" class="form-input" @bind-Value="debtModel.Title" required />
+    </div>
+
+    <div class="form-group">
+        <label for="description">Description</label>
+        <InputTextArea id="description" class="form-input" @bind-Value="debtModel.Notes" />
+    </div>
+
+    <div class="form-group">
+        <label for="amount">Amount</label>
+        <InputNumber id="amount" class="form-input" @bind-Value="debtModel.Amount" required />
+    </div>
+
+    <div class="form-group">
+        <label for="date">Date</label>
+        <InputDate id="date" class="form-input" @bind-Value="debtModel.Date" required />
+    </div>
+
+    <div class="d-flex gap-2">
+        <div class="form-group" style="flex: 1;">
+            <label for="sourceDate">Source Date</label>
+            <InputDate id="sourceDate" class="form-input" @bind-Value="debtModel.SourceDate" />
+        </div>
+        <div class="form-group" style="flex: 1;">
+            <label for="dueDate">Due Date</label>
+            <InputDate id="dueDate" class="form-input" @bind-Value="debtModel.DueDate" />
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="tags">Tags</label>
+        <InputSelect id="tags" class="form-select" @bind-Value="SelectedTag" @onchange="OnTagChanged" required>
+            <option value="">Select a tag</option>
+            <option value="Credit Card">Credit Card</option>
+            <option value="Personal Loan">Personal Loan</option>
+            <option value="Mortgage">Mortgage</option>
+            <option value="Student Loan">Student Loan</option>
+            <option value="Auto Loan">Auto Loan</option>
+            <option value="Other">Other</option>
+        </InputSelect>
+    </div>
+
+    @if (SelectedTag == "Other")
+    {
+        <div class="form-group d-flex align-items-center gap-2 mt-2">
+            <InputText id="customTag" class="form-control" @bind-Value="CustomTag" placeholder="Enter custom tag" />
+            <button type="button" class="btn btn-success btn-sm" @onclick="ConfirmCustomTag" disabled="@string.IsNullOrWhiteSpace(CustomTag)">Add</button>
+            <button type="button" class="btn btn-secondary btn-sm" @onclick="CancelCustomTag">Cancel</button>
+        </div>
+    }
+
+    <button type="submit" class="submit-btn mt-3">Add Debt</button>
+</EditForm>
+
+<hr />
+
+<h2>Your Debts</h2>
+
+@if (debtList == null)
+{
+    <p>Loading your debt records...</p>
+}
+else if (!debtList.Any())
+{
+    <p>No debt records found. Add your first debt record using the form above.</p>
+}
+else
+{
+    <table class="debt-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Source Date</th>
+                <th>Due Date</th>
+                <th>Tag</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var debt in debtList)
+            {
+                <tr>
+                    <td>@debt.Id</td>
+                    <td>@debt.Title</td>
+                    <td>@debt.Notes</td>
+                    <td>@debt.Amount</td>
+                    <td>@debt.Date.ToShortDateString()</td>
+                    <td>@debt.SourceDate?.ToShortDateString()</td>
+                    <td>@debt.DueDate?.ToShortDateString()</td>
+                    <td>@debt.Tag</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
 
 @code {
-    
+    private DebtDetails debtModel = new() { Date = DateTime.Today };
+    private List<DebtDetails> debtList;
+
+    private string SelectedTag = string.Empty;
+    private string CustomTag = string.Empty;
+    private string SuccessMessage;
+    private string ErrorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUserDebtsAsync();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            var user = await AuthenticationService.GetAuthenticatedUserAsync();
+            if (user == null)
+            {
+                ErrorMessage = "User not authenticated.";
+                return;
+            }
+
+            debtModel.UserId = user.Id;
+            debtModel.Tag = SelectedTag == "Other" ? CustomTag : SelectedTag;
+
+            await DebtService.AddDebtAsync(debtModel);
+
+            SuccessMessage = "Debt added successfully!";
+            ErrorMessage = null;
+
+            debtModel = new() { Date = DateTime.Today };
+            SelectedTag = string.Empty;
+            CustomTag = string.Empty;
+
+            await LoadUserDebtsAsync();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error: {ex.Message}";
+            SuccessMessage = null;
+        }
+    }
+
+    private async Task LoadUserDebtsAsync()
+    {
+        var user = await AuthenticationService.GetAuthenticatedUserAsync();
+        if (user != null)
+        {
+            debtList = await DebtService.GetDebtsByUserAsync(user.Id);
+        }
+        else
+        {
+            ErrorMessage = "User not authenticated.";
+        }
+    }
+
+    private void OnTagChanged(ChangeEventArgs e)
+    {
+        SelectedTag = e.Value?.ToString();
+        if (SelectedTag != "Other")
+        {
+            CustomTag = string.Empty;
+        }
+    }
+
+    private void ConfirmCustomTag()
+    {
+        if (!string.IsNullOrWhiteSpace(CustomTag))
+        {
+            SelectedTag = CustomTag;
+        }
+    }
+
+    private void CancelCustomTag()
+    {
+        CustomTag = string.Empty;
+        SelectedTag = string.Empty;
+    }
 }

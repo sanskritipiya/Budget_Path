@@ -1,147 +1,234 @@
-@page "/expenses"
+@page "/expense"
 @using BugdetPath.Models
 @using BugdetPath.Services
 @inject IOutflowService OutflowService
 @inject AuthenticationService AuthenticationService
 
-
 <div class="form-container">
     <h1 class="form-title">Expense</h1>
-    <EditForm OnValidSubmit="HandleSubmit">
+
+    @* Success/Error Messages *@
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <div class="alert alert-success" role="alert">@SuccessMessage</div>
+    }
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">@ErrorMessage</div>
+    }
+
+    <EditForm Model="@ExpenseForm" OnValidSubmit="HandleSubmit">
         <div class="form-group">
             <label class="form-label" for="title">Title</label>
-            <input type="text" id="title" class="form-input" @bind="Title" required />
+            <input type="text" id="title" class="form-input" @bind="ExpenseForm.Title" required />
         </div>
 
         <div class="form-group">
             <label class="form-label" for="amount">Amount</label>
-            <input type="number" id="amount" class="form-input" @bind="Amount" step="0.01" required />
+            <input type="number" id="amount" class="form-input" @bind="ExpenseForm.Amount" step="0.01" required />
         </div>
 
         <div class="form-group">
             <label class="form-label" for="notes">Notes</label>
-            <textarea id="notes" class="form-input form-textarea" @bind="Notes"></textarea>
+            <textarea id="notes" class="form-input form-textarea" @bind="ExpenseForm.Notes"></textarea>
         </div>
 
         <div class="form-group">
             <label class="form-label" for="date">Date</label>
-            <input type="date" id="date" class="form-input" @bind="Date" required />
+            <input type="date" id="date" class="form-input" @bind="ExpenseForm.Date" @bind:format="yyyy-MM-dd" required />
         </div>
 
         <div class="form-group">
             <label class="form-label" for="tags">Tags</label>
-            <select id="tags" class="form-select" @bind="SelectedTag">
+            <select id="tags" class="form-select" @bind="SelectedTag" required>
                 <option value="">Select a tag</option>
-                <option value="Rent">Rent</option>
-                <option value="Utilities">Utilities</option>
-                <option value="Groceries">Groceries</option>
-                <option value="Transport">Transport</option>
-                <option value="Entertainment">Entertainment</option>
-                <option value="Other">Other</option>
+                <option value="Yearly">Yearly</option>
+                <option value="Monthly">Monthly</option>
+                <option value="Food">Food</option>
+                <option value="Drinks">Drinks</option>
+                <option value="Clothes">Clothes</option>
+                <option value="other">Other</option>
             </select>
         </div>
 
-        @if (!IsCustomTagDisabled)
+        @if (SelectedTag == "other")
         {
-            <div class="form-group d-flex align-items-center gap-2">
+            <div class="form-group d-flex align-items-center gap-2 mt-2">
                 <input type="text" id="customTags" class="form-control" @bind="CustomTag" placeholder="Enter custom tag" />
-                <button type="button" class="btn btn-success btn-sm" @onclick="ConfirmCustomTag">Add</button>
+                <button type="button" class="btn btn-success btn-sm" @onclick="ConfirmCustomTag" disabled="@string.IsNullOrWhiteSpace(CustomTag)">Add</button>
                 <button type="button" class="btn btn-secondary btn-sm" @onclick="CancelCustomTag">Cancel</button>
             </div>
         }
 
-        <button type="submit" class="submit-btn">Add Expense</button>
+        <button type="submit" class="submit-btn mt-3" disabled="@IsSubmitting">
+            @if (IsSubmitting)
+            {
+                <span>Adding Expense...</span>
+            }
+            else
+            {
+                <span>Add Expense</span>
+            }
+        </button>
     </EditForm>
 </div>
 
-@if (Expenses.Any())
-{
+<div class="expense-section mt-4">
     <h2 class="table-heading">Your Expenses</h2>
-    <table class="income-table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Title</th>
-                <th>Amount</th>
-                <th>Date</th>
-                <th>Tag</th>
-                <th>Notes</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var expense in Expenses)
-            {
+
+    @if (IsLoading)
+    {
+        <div class="loading-message"><p>Loading your expense records...</p></div>
+    }
+    else if (Expenses.Any())
+    {
+        <table class="income-table">
+            <thead>
                 <tr>
-                    <td>@expense.Id</td>
-                    <td>@expense.Title</td>
-                    <td>@expense.Amount</td>
-                    <td>@expense.Date.ToShortDateString()</td>
-                    <td>@expense.Tag</td>
-                    <td>@expense.Notes</td>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                    <th>Tag</th>
+                    <th>Notes</th>
                 </tr>
-            }
-        </tbody>
-    </table>
-}
+            </thead>
+            <tbody>
+                @foreach (var expense in Expenses)
+                {
+                    <tr>
+                        <td>@expense.Id</td>
+                        <td>@expense.Title</td>
+                        <td>$@expense.Amount.ToString("F2")</td>
+                        <td>@expense.Date.ToShortDateString()</td>
+                        <td>@expense.Tag</td>
+                        <td>@expense.Notes</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        
+    }
+    else
+    {
+        <div class="no-income-message text-muted">
+            <p>No expense records found. Add your first expense record using the form above.</p>
+        </div>
+    }
+</div>
 
 @code {
-    private string Title = string.Empty;
-    private decimal Amount;
-    private string Notes = string.Empty;
-    private DateTime Date = DateTime.Today;
-    private string SelectedTag = string.Empty;
-    private string CustomTag = string.Empty;
-    private bool IsCustomTagDisabled = true;
-
+    private ExpenseDetails ExpenseForm = new() { Date = DateTime.Today };
     private List<ExpenseDetails> Expenses = new();
+
+    private string SelectedTag { get; set; } = string.Empty;
+    private string CustomTag { get; set; } = string.Empty;
+    private string Tag { get; set; } = string.Empty;
+
+    private string SuccessMessage { get; set; } = string.Empty;
+    private string ErrorMessage { get; set; } = string.Empty;
+
+    private bool IsLoading { get; set; } = true;
+    private bool IsSubmitting { get; set; } = false;
 
     protected override async Task OnInitializedAsync()
     {
-        var user = await AuthenticationService.GetAuthenticatedUserAsync();
-        if (user != null)
-        {
-            Expenses = await OutflowService.LoadUserOutflowsAsync(user.Id);
-        }
+        await LoadExpensesAsync();
     }
 
-    private async Task HandleSubmit()
+    private async Task LoadExpensesAsync()
     {
-        var user = await AuthenticationService.GetAuthenticatedUserAsync();
-        if (user == null)
-            return;
-
-        var expense = new ExpenseDetails
+        try
         {
-            Title = Title,
-            Amount = Amount,
-            Notes = Notes,
-            Date = Date,
-            Tag = string.IsNullOrWhiteSpace(CustomTag) ? SelectedTag : CustomTag,
-            UserId = user.Id
-        };
+            IsLoading = true;
+            ClearMessages();
 
-        await OutflowService.SaveOutflowsAsync(expense);
-        Expenses = await OutflowService.LoadUserOutflowsAsync(user.Id);
-
-        // Reset form
-        Title = string.Empty;
-        Amount = 0;
-        Notes = string.Empty;
-        SelectedTag = string.Empty;
-        CustomTag = string.Empty;
-        IsCustomTagDisabled = true;
-        Date = DateTime.Today;
+            var user = await AuthenticationService.GetAuthenticatedUserAsync();
+            if (user != null)
+            {
+                Expenses = await OutflowService.LoadUserOutflowsAsync(user.Id);
+            }
+            else
+            {
+                ErrorMessage = "User is not authenticated. Please log in to view your expense records.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Failed to load expense records. Please try again.";
+            Console.WriteLine($"Error loading expenses: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     private void ConfirmCustomTag()
     {
-        IsCustomTagDisabled = true;
+        if (!string.IsNullOrWhiteSpace(CustomTag))
+        {
+            Tag = CustomTag.Trim();
+        }
     }
 
     private void CancelCustomTag()
     {
+        SelectedTag = string.Empty;
         CustomTag = string.Empty;
-        IsCustomTagDisabled = true;
+        Tag = string.Empty;
+    }
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            IsSubmitting = true;
+            ClearMessages();
+
+            var user = await AuthenticationService.GetAuthenticatedUserAsync();
+            if (user != null)
+            {
+                ExpenseForm.Tag = SelectedTag == "other" ? CustomTag : SelectedTag;
+                ExpenseForm.UserId = user.Id;
+
+                await OutflowService.SaveOutflowsAsync(ExpenseForm);
+
+                var savedTitle = ExpenseForm.Title;
+
+                ClearForm();
+                SuccessMessage = $"Expense '{savedTitle}' added successfully!";
+                await LoadExpensesAsync();
+            }
+            else
+            {
+                ErrorMessage = "User is not authenticated. Please log in to add expense.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Failed to add expense. Please check your input and try again.";
+            Console.WriteLine($"Error saving expense: {ex.Message}");
+        }
+        finally
+        {
+            IsSubmitting = false;
+        }
+    }
+
+    private void ClearForm()
+    {
+        ExpenseForm = new ExpenseDetails { Date = DateTime.Today };
+        SelectedTag = string.Empty;
+        CustomTag = string.Empty;
+        Tag = string.Empty;
+    }
+
+    private void ClearMessages()
+    {
+        SuccessMessage = string.Empty;
+        ErrorMessage = string.Empty;
     }
 }
-
+ 
