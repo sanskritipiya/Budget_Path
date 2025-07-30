@@ -1,5 +1,4 @@
 using BugdetPath.Models;
-
 using System.Text.Json;
 
 namespace BugdetPath.Services
@@ -35,7 +34,6 @@ namespace BugdetPath.Services
 
                 var inflows = await LoadUserInflowsAsync(user.Id);
 
-                // Assign a unique ID based on existing inflows
                 inflow.Id = inflows.Any() ? inflows.Max(i => i.Id) + 1 : 1;
 
                 inflows.Add(inflow);
@@ -45,7 +43,7 @@ namespace BugdetPath.Services
             catch (Exception ex)
             {
                 Console.WriteLine($"Error saving inflow: {ex.Message}");
-                throw;
+                // Removed 'throw;' to prevent unhandled exception
             }
         }
 
@@ -63,6 +61,11 @@ namespace BugdetPath.Services
 
                 return JsonSerializer.Deserialize<List<IncomeDetails>>(json) ?? new List<IncomeDetails>();
             }
+            catch (JsonException ex)
+            {
+                Console.WriteLine($"JSON error loading inflows: {ex.Message}");
+                return new List<IncomeDetails>();
+            }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error loading inflows: {ex.Message}");
@@ -70,22 +73,22 @@ namespace BugdetPath.Services
             }
         }
 
-        // Get total amount of inflows for a user
+        // Get total inflow amount
         public async Task<decimal> GetTotalInflowAmountAsync(int userId)
         {
             try
             {
                 var inflows = await LoadUserInflowsAsync(userId);
-                return inflows.Sum(i => i.Amount); // Assuming Amount is decimal
+                return inflows.Sum(i => i.Amount); // Make sure Amount is decimal
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error calculating total inflows: {ex.Message}");
+                Console.WriteLine($"Error calculating total inflow: {ex.Message}");
                 return 0;
             }
         }
 
-        // Save all inflows for a user to file
+        // Save inflows to file
         private async Task SaveInflowAsync(int userId, List<IncomeDetails> inflows)
         {
             try
@@ -98,12 +101,12 @@ namespace BugdetPath.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error saving inflows: {ex.Message}");
+                Console.WriteLine($"Error writing inflow data: {ex.Message}");
                 throw;
             }
         }
 
-        // Helper to get user-specific file path
+        // File path for user inflows
         private string GetUserInflowsFilePath(int userId)
         {
             return Path.Combine(dataDirectory, $"inflows_{userId}.json");

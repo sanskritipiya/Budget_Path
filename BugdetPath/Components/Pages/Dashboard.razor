@@ -1,5 +1,105 @@
-<h3>Dashboard</h3>
+@page "/dashboard"
+<div class="header">
+        <h1>Expense Tracker Dashboard</h1>
+    </div>
 
-@code {
-    
-}
+    <div class="dashboard-grid">
+        <div class="card">
+            <h3>Total Balance</h3>
+            <div class="amount">$ 38,000</div>
+        </div>
+        <div class="card">
+            <h3>Total Income</h3>
+            <div class="amount">$ 30,000</div>
+        </div>
+        <div class="card">
+            <h3>Total Expense</h3>
+            <div class="amount">$ 38,000</div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr;">
+        <div class="card">
+            <h3>Debts</h3>
+            <div class="amount">$ 8000</div>
+        </div>
+    </div>
+
+    <div class="bottom-section">
+        <div class="transactions-card">
+            <h3>Top 5 Transactions</h3>
+            <div class="transaction-item">
+                <span class="transaction-name">Rent</span>
+                <span class="transaction-amount expense">$3500</span>
+            </div>
+            <div class="transaction-item">
+                <span class="transaction-name">Clothes</span>
+                <span class="transaction-amount expense">$300</span>
+            </div>
+            <div class="transaction-item">
+                <span class="transaction-name">Food</span>
+                <span class="transaction-amount expense">$150</span>
+            </div>
+            <div class="transaction-item">
+                <span class="transaction-name">Fuel</span>
+                <span class="transaction-amount expense">$50</span>
+            </div>
+            <div class="transaction-item">
+                <span class="transaction-name">Salary</span>
+                <span class="transaction-amount income">$ 8000</span>
+            </div>
+        </div>
+
+        <div class="debts-section">
+            <div class="debts-card">
+                <h3>Pending Debts</h3>
+                <div class="debt-table">
+                    <div class="debt-header">
+                        <div>Name</div>
+                        <div>Amount</div>
+                        <div>Date</div>
+                    </div>
+                    <div class="debt-row">
+                        <div>Aarav</div>
+                        <div class="debt-amount">$1000</div>
+                        <div>12/02/2024</div>
+                    </div>
+                    <div class="debt-row">
+                        <div>Ojeswi</div>
+                        <div class="debt-amount">$500</div>
+                        <div>16/02/2024</div>
+                    </div>
+                    <div class="debt-row">
+                        <div>Eliose</div>
+                        <div class="debt-amount">$1500</div>
+                        <div>18/02/2024</div>
+                    </div>
+                    <div class="debt-row">
+                        <div>Shawn</div>
+                        <div class="debt-amount">$2000</div>
+                        <div>25/02/2024</div>
+                    </div>
+                    <div class="debt-row">
+                        <div>Saint</div>
+                        <div class="debt-amount">$300</div>
+                        <div>01/03/2024</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3>Monthly Cash Flow</h3>
+                <div class="chart-container">
+                    <div class="bar bar-2011" data-year="2011"></div>
+                    <div class="bar bar-2012" data-year="2012"></div>
+                    <div class="bar bar-2013" data-year="2013"></div>
+                    <div class="bar bar-2014" data-year="2014"></div>
+                    <div class="bar bar-2015" data-year="2015"></div>
+                    <div class="bar bar-2016" data-year="2016"></div>
+                    <div class="bar bar-2017" data-year="2017"></div>
+                    <div class="bar bar-2018" data-year="2018"></div>
+                    <div class="bar bar-2019" data-year="2019"></div>
+                </div>
+            </div>
+        </div>
+    </div>

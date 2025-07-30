@@ -1,4 +1,4 @@
-@page "/inflow"
+@page "/income"
 @using BugdetPath.Models
 @using BugdetPath.Services
 @inject IInflowService InflowService
@@ -29,7 +29,7 @@
 
         <div class="form-group">
             <label class="form-label" for="tags">Tags</label>
-            <select id="tags" class="form-select" @bind="SelectedTag" >
+            <select id="tags" class="form-select" @bind="SelectedTag">
                 <option value="">Select a tag</option>
                 <option value="Yearly">Yearly</option>
                 <option value="Monthly">Monthly</option>
@@ -102,14 +102,21 @@
 
     private async Task LoadIncomesAsync()
     {
-        var user = AuthenticationService.GetAuthenticatedUserAsync();
-        if (user != null)
+        try
         {
-            Incomes = await InflowService.LoadUserInflowsAsync(user.Id);
+            var user = await AuthenticationService.GetAuthenticatedUserAsync();
+            if (user != null)
+            {
+                Incomes = await InflowService.LoadUserInflowsAsync(user.Id);
+            }
+            else
+            {
+                Console.WriteLine("User is not authenticated.");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            Console.WriteLine("User is not authenticated");
+            Console.WriteLine($"Error loading incomes: {ex.Message}");
         }
     }
 
@@ -140,28 +147,35 @@
 
     private async Task HandleSubmit()
     {
-        var user = await AuthenticationService.GetAuthenticatedUserAsync();
-        if (user != null)
+        try
         {
-            var tagToSave = SelectedTag == "other" ? CustomTag : SelectedTag;
-
-            var income = new IncomeDetails
+            var user = await AuthenticationService.GetAuthenticatedUserAsync();
+            if (user != null)
             {
-                Title = Title,
-                Amount = Amount,
-                Date = Date,
-                Tag = tagToSave,
-                Notes = Notes,
-                UserId = user.Id
-            };
+                var tagToSave = SelectedTag == "other" ? CustomTag : SelectedTag;
 
-            await InflowService.SaveInflowAsync(income);
-            await LoadIncomesAsync();
-            ClearForm();
+                var income = new IncomeDetails
+                {
+                    Title = Title,
+                    Amount = Amount,
+                    Date = Date,
+                    Tag = tagToSave,
+                    Notes = Notes,
+                    UserId = user.Id
+                };
+
+                await InflowService.SaveInflowAsync(income);
+                await LoadIncomesAsync();
+                ClearForm();
+            }
+            else
+            {
+                Console.WriteLine("User is not authenticated.");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            Console.WriteLine("User is not authenticated.");
+            Console.WriteLine($"Error saving income: {ex.Message}");
         }
     }
 
