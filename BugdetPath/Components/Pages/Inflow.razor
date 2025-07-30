@@ -1,0 +1,178 @@
+@page "/inflow"
+@using BugdetPath.Models
+@using BugdetPath.Services
+@inject IInflowService InflowService
+@inject AuthenticationService AuthenticationService
+
+<div class="form-container">
+    <h1 class="form-title">Inflow</h1>
+    <EditForm OnValidSubmit="HandleSubmit">
+        <div class="form-group">
+            <label class="form-label" for="title">Title</label>
+            <input type="text" id="title" class="form-input" @bind="Title" required />
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="amount">Amount</label>
+            <input type="number" id="amount" class="form-input" @bind="Amount" step="0.01" required />
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="notes">Notes</label>
+            <textarea id="notes" class="form-input form-textarea" @bind="Notes"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="date">Date</label>
+            <input type="date" id="date" class="form-input" @bind="Date" required />
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="tags">Tags</label>
+            <select id="tags" class="form-select" @bind="SelectedTag" >
+                <option value="">Select a tag</option>
+                <option value="Yearly">Yearly</option>
+                <option value="Monthly">Monthly</option>
+                <option value="Food">Food</option>
+                <option value="Drinks">Drinks</option>
+                <option value="Clothes">Clothes</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+
+        @if (!IsCustomTagDisabled)
+        {
+            <div class="form-group d-flex align-items-center gap-2">
+                <input type="text" id="customTags" class="form-control" @bind="CustomTag" placeholder="Enter custom tag" />
+                <button type="button" class="btn btn-success btn-sm" @onclick="ConfirmCustomTag">Add</button>
+                <button type="button" class="btn btn-secondary btn-sm" @onclick="CancelCustomTag">Cancel</button>
+            </div>
+        }
+
+        <button type="submit" class="submit-btn">Add Income</button>
+    </EditForm>
+</div>
+
+@if (Incomes.Any())
+{
+    <h2 class="table-heading">Your Income</h2>
+    <table class="income-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Tag</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var income in Incomes)
+            {
+                <tr>
+                    <td>@income.Id</td>
+                    <td>@income.Title</td>
+                    <td>@income.Amount</td>
+                    <td>@income.Date.ToShortDateString()</td>
+                    <td>@income.Tag</td>
+                    <td>@income.Notes</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private string Title { get; set; } = string.Empty;
+    private decimal Amount { get; set; }
+    private string Notes { get; set; } = string.Empty;
+    private DateTime Date { get; set; } = DateTime.Today;
+    private string SelectedTag { get; set; } = string.Empty;
+    private string CustomTag { get; set; } = string.Empty;
+    private string Tag { get; set; } = string.Empty;
+    private List<IncomeDetails> Incomes = new();
+
+    private bool IsCustomTagDisabled => SelectedTag != "other";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadIncomesAsync();
+    }
+
+    private async Task LoadIncomesAsync()
+    {
+        var user = AuthenticationService.GetAuthenticatedUserAsync();
+        if (user != null)
+        {
+            Incomes = await InflowService.LoadUserInflowsAsync(user.Id);
+        }
+        else
+        {
+            Console.WriteLine("User is not authenticated");
+        }
+    }
+
+    private void OnTagChanged(ChangeEventArgs e)
+    {
+        SelectedTag = e.Value?.ToString() ?? "";
+        if (SelectedTag != "other")
+        {
+            CustomTag = string.Empty;
+            Tag = SelectedTag;
+        }
+    }
+
+    private void ConfirmCustomTag()
+    {
+        if (!string.IsNullOrWhiteSpace(CustomTag))
+        {
+            Tag = CustomTag.Trim();
+        }
+    }
+
+    private void CancelCustomTag()
+    {
+        SelectedTag = string.Empty;
+        CustomTag = string.Empty;
+        Tag = string.Empty;
+    }
+
+    private async Task HandleSubmit()
+    {
+        var user = await AuthenticationService.GetAuthenticatedUserAsync();
+        if (user != null)
+        {
+            var tagToSave = SelectedTag == "other" ? CustomTag : SelectedTag;
+
+            var income = new IncomeDetails
+            {
+                Title = Title,
+                Amount = Amount,
+                Date = Date,
+                Tag = tagToSave,
+                Notes = Notes,
+                UserId = user.Id
+            };
+
+            await InflowService.SaveInflowAsync(income);
+            await LoadIncomesAsync();
+            ClearForm();
+        }
+        else
+        {
+            Console.WriteLine("User is not authenticated.");
+        }
+    }
+
+    private void ClearForm()
+    {
+        Title = string.Empty;
+        Amount = 0;
+        Notes = string.Empty;
+        Date = DateTime.Today;
+        SelectedTag = string.Empty;
+        CustomTag = string.Empty;
+        Tag = string.Empty;
+    }
+}

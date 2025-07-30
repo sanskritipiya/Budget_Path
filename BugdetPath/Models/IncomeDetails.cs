@@ -12,8 +12,7 @@ public class IncomeDetails
     
     public int UserId { get; set; }
     
-    public string Tags { get; set; }
+    public string Tag { get; set; }
     
-    public string CustomTags { get; set; }
     public decimal Amount { get; set; }
 }

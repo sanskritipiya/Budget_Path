@@ -106,3 +106,22 @@ body {
     margin-left: 5px;
     text-decoration: underline;
 }
+
+.signup-success {
+    color: green;
+    margin-top: 10px;
+    font-weight: bold;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+.signup-error {
+    color: red;
+    margin-top: 10px;
+    font-weight: bold;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}

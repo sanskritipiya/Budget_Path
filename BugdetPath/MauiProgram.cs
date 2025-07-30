@@ -17,8 +17,12 @@ public static class MauiProgram
         builder.Services.AddSingleton<IUserService, UserInfoService>();
         
         builder.Services.AddSingleton<IInflowService, InflowService>();
+        
+        builder.Services.AddSingleton<IOutflowService, OutflowService>();
+        
+        builder.Services.AddSingleton<IDebtService, DebtService>();
      
-        builder.Services.AddScoped<AuthenticationStateService>();
+        builder.Services.AddScoped<AuthenticationService>();
 
 
 #if DEBUG

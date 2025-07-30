@@ -1,8 +1,10 @@
 @page "/Signup"
+@using BugdetPath.Components.Layout
 @using BugdetPath.Models
 @using BugdetPath.Services
 @inject IUserService UserInfoService
 @inject NavigationManager NavigationManager
+@layout EmptyNav
 
 <div class="signup-page">
     <div class="signup-left">
@@ -45,6 +47,11 @@
             {
                 <div class="signup-error">@ErrorMessage</div>
             }
+            
+            @if (!string.IsNullOrEmpty(SuccessMessage))
+            {
+                <div class="signup-success">@SuccessMessage</div>
+            }
 
             <div class="signup-footer">
                 <span>Already have an account?</span>
@@ -60,6 +67,7 @@
     private string Password { get; set; } = string.Empty;
     private string Currency { get; set; } = string.Empty;
     private string ErrorMessage { get; set; } = string.Empty;
+    private string SuccessMessage { get; set; } = string.Empty;
 
     private async Task RegisterUser()
     {
@@ -80,11 +88,16 @@
         var success = await UserInfoService.RegisterUserAsync(newUser);
         if (success)
         {
+            SuccessMessage = "Signup successful! Redirecting to login...";
+            ErrorMessage = string.Empty;
+
+            await Task.Delay(1500);
             NavigationManager.NavigateTo("/");
         }
         else
         {
             ErrorMessage = "Username is already taken.";
+            SuccessMessage = string.Empty;
         }
     }
 }

@@ -7,9 +7,9 @@ namespace BugdetPath.Services
     public class InflowService : IInflowService
     {
         private readonly string dataDirectory;
-        private readonly AuthenticationStateService authService;
+        private readonly AuthenticationService authService;
 
-        public InflowService(AuthenticationStateService authService)
+        public InflowService(AuthenticationService authService)
         {
             this.authService = authService;
 
@@ -26,7 +26,7 @@ namespace BugdetPath.Services
         {
             try
             {
-                var user =  authService.GetAuthenticatedUser();
+                var user = await authService.GetAuthenticatedUserAsync();
                 if (user == null)
                     throw new InvalidOperationException("User is not authenticated.");
 
@@ -40,7 +40,7 @@ namespace BugdetPath.Services
 
                 inflows.Add(inflow);
 
-                await SaveInflowsAsync(user.Id, inflows);
+                await SaveInflowAsync(user.Id, inflows);
             }
             catch (Exception ex)
             {
@@ -86,7 +86,7 @@ namespace BugdetPath.Services
         }
 
         // Save all inflows for a user to file
-        private async Task SaveInflowsAsync(int userId, List<IncomeDetails> inflows)
+        private async Task SaveInflowAsync(int userId, List<IncomeDetails> inflows)
         {
             try
             {
