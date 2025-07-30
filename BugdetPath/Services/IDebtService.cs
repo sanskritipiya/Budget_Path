@@ -12,6 +12,10 @@ namespace BugdetPath.Services
         Task<decimal> CalculatePendingDebtAsync(int  userId);
     
         Task<bool> MarkDebtAsClearedAsync(int debtId);
+        
+        Task<DebtDetails> GetDebtByIdAsync(int debtId, int userId);  
+
+        Task UpdateDebtAsync(DebtDetails debt, int userId);    
     
     
     }

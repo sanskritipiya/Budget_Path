@@ -27,7 +27,7 @@ namespace BugdetPath.Services
                 throw new InvalidOperationException("User is not authenticated.");
 
             debt.UserId = user.Id;
-            debt.CreatedAt = DateTime.Now;
+      
 
             var debts = await LoadUserDebtsAsync(user.Id);
             debt.Id = debts.Any() ? debts.Max(d => d.Id) + 1 : 1;
@@ -71,6 +71,35 @@ namespace BugdetPath.Services
             }
 
             return false; // Not enough inflow to clear debt
+        }
+
+        // ✅ Added: Get a debt by its ID
+        public async Task<DebtDetails> GetDebtByIdAsync(int debtId, int userId)
+        {
+            var debts = await LoadUserDebtsAsync(userId);
+            return debts.FirstOrDefault(d => d.Id == debtId);
+        }
+
+        // ✅ Added: Update an existing debt
+        public async Task UpdateDebtAsync(DebtDetails debt, int userId)
+        {
+            var debts = await LoadUserDebtsAsync(userId);
+            var existingDebt = debts.FirstOrDefault(d => d.Id == debt.Id);
+
+            if (existingDebt != null)
+            {
+                existingDebt.Title = debt.Title;
+                existingDebt.Amount = debt.Amount;
+                existingDebt.Notes = debt.Notes;
+                existingDebt.Date = debt.Date;
+                existingDebt.IsCleared = debt.IsCleared;
+
+                await SaveDebtsAsync(userId, debts);
+            }
+            else
+            {
+                throw new Exception("Debt not found.");
+            }
         }
 
         // Private helper to load debts

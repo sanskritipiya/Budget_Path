@@ -1,4 +1,5 @@
-﻿using BugdetPath.Services;
+﻿
+using BugdetPath.Services;
 using Microsoft.Extensions.Logging;
 
 namespace BugdetPath;
@@ -21,6 +22,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<IOutflowService, OutflowService>();
         
         builder.Services.AddSingleton<IDebtService, DebtService>();
+        
+        builder.Services.AddSingleton<ITransactionService, TransactionService>();
      
         builder.Services.AddScoped<AuthenticationService>();
 
