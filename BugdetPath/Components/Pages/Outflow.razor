@@ -165,11 +165,27 @@
         }
     }
 
+    private void OnTagChanged(ChangeEventArgs e)
+    {
+        SelectedTag = e.Value?.ToString() ?? string.Empty;
+
+        if (SelectedTag != "other")
+        {
+            CustomTag = string.Empty;
+            Tag = SelectedTag;
+        }
+        else
+        {
+            Tag = string.Empty;
+        }
+    }
+
     private void ConfirmCustomTag()
     {
         if (!string.IsNullOrWhiteSpace(CustomTag))
         {
             Tag = CustomTag.Trim();
+            StateHasChanged();
         }
     }
 
@@ -178,6 +194,7 @@
         SelectedTag = string.Empty;
         CustomTag = string.Empty;
         Tag = string.Empty;
+        StateHasChanged();
     }
 
     private async Task HandleSubmit()
@@ -190,7 +207,16 @@
             var user = await AuthenticationService.GetAuthenticatedUserAsync();
             if (user != null)
             {
-                ExpenseForm.Tag = SelectedTag == "other" ? CustomTag : SelectedTag;
+                // Set the tag based on selection
+                if (SelectedTag == "other" && !string.IsNullOrWhiteSpace(CustomTag))
+                {
+                    ExpenseForm.Tag = CustomTag.Trim();
+                }
+                else
+                {
+                    ExpenseForm.Tag = SelectedTag;
+                }
+
                 ExpenseForm.UserId = user.Id;
 
                 await OutflowService.SaveOutflowsAsync(ExpenseForm);
@@ -199,6 +225,8 @@
 
                 ClearForm();
                 SuccessMessage = $"Expense '{savedTitle}' added successfully!";
+                StateHasChanged();
+                
                 await LoadExpensesAsync();
             }
             else
@@ -214,6 +242,7 @@
         finally
         {
             IsSubmitting = false;
+            StateHasChanged();
         }
     }
 

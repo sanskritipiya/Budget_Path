@@ -54,10 +54,8 @@
                 <option value="Clothes">Clothes</option>
                 <option value="other">Other</option>
             </select>
-
             
         </div>
-
 
         @if (SelectedTag == "other")
         {
@@ -176,7 +174,7 @@
 
     private void OnTagChanged(ChangeEventArgs e)
     {
-        SelectedTag = e.Value?.ToString();
+        SelectedTag = e.Value?.ToString() ?? string.Empty;
 
         if (SelectedTag != "other")
         {
@@ -194,6 +192,7 @@
         if (!string.IsNullOrWhiteSpace(CustomTag))
         {
             Tag = CustomTag.Trim();
+            StateHasChanged();
         }
     }
 
@@ -202,6 +201,7 @@
         SelectedTag = string.Empty;
         CustomTag = string.Empty;
         Tag = string.Empty;
+        StateHasChanged();
     }
 
     private async Task HandleSubmit()
@@ -214,7 +214,16 @@
             var user = await AuthenticationService.GetAuthenticatedUserAsync();
             if (user != null)
             {
-                IncomeForm.Tag = Tag;
+                // Set the tag based on selection
+                if (SelectedTag == "other" && !string.IsNullOrWhiteSpace(CustomTag))
+                {
+                    IncomeForm.Tag = CustomTag.Trim();
+                }
+                else
+                {
+                    IncomeForm.Tag = SelectedTag;
+                }
+
                 IncomeForm.UserId = user.Id;
 
                 await InflowService.SaveInflowAsync(IncomeForm);
@@ -224,6 +233,7 @@
                 ClearForm();
 
                 SuccessMessage = $"Income '{savedTitle}' added successfully!";
+                StateHasChanged();
 
                 await LoadIncomesAsync();
             }
@@ -240,6 +250,7 @@
         finally
         {
             IsSubmitting = false;
+            StateHasChanged();
         }
     }
 

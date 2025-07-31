@@ -4,184 +4,215 @@
 @inject IDebtService DebtService
 @inject AuthenticationService AuthenticationService
 
-<h1 class="form-title">Debt</h1>
+<div class="form-container">
+    <h1 class="form-title">Debt</h1>
 
-@if (!string.IsNullOrEmpty(SuccessMessage))
-{
-    <div class="alert alert-success">@SuccessMessage</div>
-}
-@if (!string.IsNullOrEmpty(ErrorMessage))
-{
-    <div class="alert alert-danger">@ErrorMessage</div>
-}
-
-<EditForm Model="@debtModel" OnValidSubmit="HandleValidSubmit">
-    <div class="form-group">
-        <label for="title">Title</label>
-        <InputText id="title" class="form-input" @bind-Value="debtModel.Title" required />
-    </div>
-
-    <div class="form-group">
-        <label for="description">Description</label>
-        <InputTextArea id="description" class="form-input" @bind-Value="debtModel.Notes" />
-    </div>
-
-    <div class="form-group">
-        <label for="amount">Amount</label>
-        <InputNumber id="amount" class="form-input" @bind-Value="debtModel.Amount" required />
-    </div>
-
-    <div class="form-group">
-        <label for="date">Date</label>
-        <InputDate id="date" class="form-input" @bind-Value="debtModel.Date" required />
-    </div>
-
-    <div class="d-flex gap-2">
-        <div class="form-group" style="flex: 1;">
-            <label for="sourceDate">Source Date</label>
-            <InputDate id="sourceDate" class="form-input" @bind-Value="debtModel.SourceDate" />
-        </div>
-        <div class="form-group" style="flex: 1;">
-            <label for="dueDate">Due Date</label>
-            <InputDate id="dueDate" class="form-input" @bind-Value="debtModel.DueDate" />
-        </div>
-    </div>
-
-    <div class="form-group">
-        <label for="tags">Tags</label>
-        <InputSelect id="tags" class="form-select" @bind-Value="SelectedTag" @onchange="OnTagChanged" required>
-            <option value="">Select a tag</option>
-            <option value="Credit Card">Credit Card</option>
-            <option value="Personal Loan">Personal Loan</option>
-            <option value="Mortgage">Mortgage</option>
-            <option value="Student Loan">Student Loan</option>
-            <option value="Auto Loan">Auto Loan</option>
-            <option value="Other">Other</option>
-        </InputSelect>
-    </div>
-
-    @if (SelectedTag == "Other")
+    @* Success/Error Messages *@
+    @if (!string.IsNullOrEmpty(SuccessMessage))
     {
-        <div class="form-group d-flex align-items-center gap-2 mt-2">
-            <InputText id="customTag" class="form-control" @bind-Value="CustomTag" placeholder="Enter custom tag" />
-            <button type="button" class="btn btn-success btn-sm" @onclick="ConfirmCustomTag" disabled="@string.IsNullOrWhiteSpace(CustomTag)">Add</button>
-            <button type="button" class="btn btn-secondary btn-sm" @onclick="CancelCustomTag">Cancel</button>
+        <div class="alert alert-success" role="alert">
+            @SuccessMessage
         </div>
     }
 
-    <button type="submit" class="submit-btn mt-3">Add Debt</button>
-</EditForm>
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            @ErrorMessage
+        </div>
+    }
 
-<hr />
+    <EditForm Model="@DebtForm" OnValidSubmit="HandleSubmit">
+        <div class="form-group">
+            <label class="form-label" for="title">Title</label>
+            <input type="text" id="title" class="form-input" @bind="DebtForm.Title" required />
+        </div>
 
-<h2>Your Debts</h2>
+        <div class="form-group">
+            <label class="form-label" for="description">Description</label>
+            <textarea id="description" class="form-input form-textarea" @bind="DebtForm.Notes"></textarea>
+        </div>
 
-@if (debtList == null)
-{
-    <p>Loading your debt records...</p>
-}
-else if (!debtList.Any())
-{
-    <p>No debt records found. Add your first debt record using the form above.</p>
-}
-else
-{
-    <table class="debt-table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Title</th>
-                <th>Description</th>
-                <th>Amount</th>
-                <th>Date</th>
-                <th>Source Date</th>
-                <th>Due Date</th>
-                <th>Tag</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var debt in debtList)
+        <div class="form-group">
+            <label class="form-label" for="amount">Amount</label>
+            <input type="number" id="amount" class="form-input" @bind="DebtForm.Amount" step="0.01" required />
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="date">Date</label>
+            <input type="date" id="date" class="form-input" @bind="DebtForm.Date" @bind:format="yyyy-MM-dd" required />
+        </div>
+
+        <div class="d-flex gap-2">
+            <div class="form-group" style="flex: 1;">
+                <label class="form-label" for="sourceDate">Source Date</label>
+                <input type="date" id="sourceDate" class="form-input" @bind="DebtForm.SourceDate" @bind:format="yyyy-MM-dd" />
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label class="form-label" for="dueDate">Due Date</label>
+                <input type="date" id="dueDate" class="form-input" @bind="DebtForm.DueDate" @bind:format="yyyy-MM-dd" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="tags">Tags</label>
+            <select id="tags" class="form-select" @bind="SelectedTag"  required/>
+                <option value="">Select a tag</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="Personal Loan">Personal Loan</option>
+                <option value="Mortgage">Mortgage</option>
+                <option value="Student Loan">Student Loan</option>
+                <option value="Auto Loan">Auto Loan</option>
+                <option value="other">Other</option>
+            
+        </div>
+
+        @if (SelectedTag == "other")
+        {
+            <div class="form-group d-flex align-items-center gap-2 mt-2">
+                <input type="text" id="customTags" class="form-control" @bind="CustomTag" placeholder="Enter custom tag" />
+                <button type="button" class="btn btn-success btn-sm" @onclick="ConfirmCustomTag" disabled="@string.IsNullOrWhiteSpace(CustomTag)">Add</button>
+                <button type="button" class="btn btn-secondary btn-sm" @onclick="CancelCustomTag">Cancel</button>
+            </div>
+        }
+
+        <button type="submit" class="submit-btn mt-3" disabled="@IsSubmitting">
+            @if (IsSubmitting)
             {
-                <tr>
-                    <td>@debt.Id</td>
-                    <td>@debt.Title</td>
-                    <td>@debt.Notes</td>
-                    <td>@debt.Amount</td>
-                    <td>@debt.Date.ToShortDateString()</td>
-                    <td>@debt.SourceDate?.ToShortDateString()</td>
-                    <td>@debt.DueDate?.ToShortDateString()</td>
-                    <td>@debt.Tag</td>
-                </tr>
+                <span>Adding Debt...</span>
             }
-        </tbody>
-    </table>
-}
+            else
+            {
+                <span>Add Debt</span>
+            }
+        </button>
+    </EditForm>
+</div>
+
+@* Debt Table Section *@
+<div class="debt-section mt-4">
+    <h2 class="table-heading">Your Debts</h2>
+    
+    @if (IsLoading)
+    {
+        <div class="loading-message">
+            <p>Loading your debt records...</p>
+        </div>
+    }
+    else if (Debts.Any())
+    {
+        <table class="debt-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                    <th>Source Date</th>
+                    <th>Due Date</th>
+                    <th>Tag</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var debt in Debts)
+                {
+                    <tr>
+                        <td>@debt.Id</td>
+                        <td>@debt.Title</td>
+                        <td>@debt.Notes</td>
+                        <td>$@debt.Amount.ToString("F2")</td>
+                        <td>@debt.Date.ToShortDateString()</td>
+                        <td>@debt.SourceDate?.ToShortDateString()</td>
+                        <td>@debt.DueDate?.ToShortDateString()</td>
+                        <td>@debt.Tag</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="no-debt-message text-muted">
+            <p>No debt records found. Add your first debt record using the form above.</p>
+        </div>
+    }
+</div>
 
 @code {
-    private DebtDetails debtModel = new() { Date = DateTime.Today };
-    private List<DebtDetails> debtList;
+    private DebtDetails DebtForm = new() { Date = DateTime.Today };
+    private List<DebtDetails> Debts = new();
 
-    private string SelectedTag = string.Empty;
-    private string CustomTag = string.Empty;
-    private string SuccessMessage;
-    private string ErrorMessage;
+    private string SelectedTag { get; set; } = string.Empty;
+    private string CustomTag { get; set; } = string.Empty;
+    private string Tag { get; set; } = string.Empty;
+
+    private string SuccessMessage { get; set; } = string.Empty;
+    private string ErrorMessage { get; set; } = string.Empty;
+
+    private bool IsLoading { get; set; } = true;
+    private bool IsSubmitting { get; set; } = false;
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadUserDebtsAsync();
-    }
-
-    private async Task HandleValidSubmit()
-    {
         try
         {
-            var user = await AuthenticationService.GetAuthenticatedUserAsync();
-            if (user == null)
-            {
-                ErrorMessage = "User not authenticated.";
-                return;
-            }
-
-            debtModel.UserId = user.Id;
-            debtModel.Tag = SelectedTag == "Other" ? CustomTag : SelectedTag;
-
-            await DebtService.AddDebtAsync(debtModel);
-
-            SuccessMessage = "Debt added successfully!";
-            ErrorMessage = null;
-
-            debtModel = new() { Date = DateTime.Today };
-            SelectedTag = string.Empty;
-            CustomTag = string.Empty;
-
-            await LoadUserDebtsAsync();
+            await LoadDebtsAsync();
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"Error: {ex.Message}";
-            SuccessMessage = null;
+            ErrorMessage = "Failed to initialize the page. Please refresh and try again.";
+            Console.WriteLine($"Error in OnInitializedAsync: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            IsLoading = false;
+            StateHasChanged();
         }
     }
 
-    private async Task LoadUserDebtsAsync()
+    private async Task LoadDebtsAsync()
     {
-        var user = await AuthenticationService.GetAuthenticatedUserAsync();
-        if (user != null)
+        try
         {
-            debtList = await DebtService.GetDebtsByUserAsync(user.Id);
+            IsLoading = true;
+            ClearMessages();
+
+            var user = await AuthenticationService.GetAuthenticatedUserAsync();
+            if (user != null)
+            {
+                var debtsList = await DebtService.GetDebtsByUserAsync(user.Id);
+                Debts = debtsList ?? new List<DebtDetails>();
+            }
+            else
+            {
+                Debts = new List<DebtDetails>();
+                ErrorMessage = "User is not authenticated. Please log in to view your debt records.";
+            }
         }
-        else
+        catch (Exception ex)
         {
-            ErrorMessage = "User not authenticated.";
+            Debts = new List<DebtDetails>();
+            ErrorMessage = "Failed to load debt records. Please try again.";
+            Console.WriteLine($"Error loading debts: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
         }
     }
 
     private void OnTagChanged(ChangeEventArgs e)
     {
         SelectedTag = e.Value?.ToString();
-        if (SelectedTag != "Other")
+
+        if (SelectedTag != "other")
         {
             CustomTag = string.Empty;
+            Tag = SelectedTag;
+        }
+        else
+        {
+            Tag = string.Empty;
         }
     }
 
@@ -189,13 +220,95 @@ else
     {
         if (!string.IsNullOrWhiteSpace(CustomTag))
         {
-            SelectedTag = CustomTag;
+            Tag = CustomTag.Trim();
         }
     }
 
     private void CancelCustomTag()
     {
-        CustomTag = string.Empty;
         SelectedTag = string.Empty;
+        CustomTag = string.Empty;
+        Tag = string.Empty;
+    }
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            IsSubmitting = true;
+            ClearMessages();
+
+            // Validate form data
+            if (string.IsNullOrWhiteSpace(DebtForm.Title))
+            {
+                ErrorMessage = "Title is required.";
+                return;
+            }
+
+            if (DebtForm.Amount <= 0)
+            {
+                ErrorMessage = "Amount must be greater than zero.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(SelectedTag))
+            {
+                ErrorMessage = "Please select a tag.";
+                return;
+            }
+
+            if (SelectedTag == "other" && string.IsNullOrWhiteSpace(CustomTag))
+            {
+                ErrorMessage = "Please enter a custom tag or select a different option.";
+                return;
+            }
+
+            var user = await AuthenticationService.GetAuthenticatedUserAsync();
+            if (user != null)
+            {
+                // Set the tag properly
+                DebtForm.Tag = SelectedTag == "other" ? CustomTag.Trim() : SelectedTag;
+                DebtForm.UserId = user.Id;
+
+                await DebtService.AddDebtAsync(DebtForm);
+
+                var savedTitle = DebtForm.Title;
+
+                ClearForm();
+
+                SuccessMessage = $"Debt '{savedTitle}' added successfully!";
+
+                await LoadDebtsAsync();
+            }
+            else
+            {
+                ErrorMessage = "User is not authenticated. Please log in to add debt.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Failed to add debt. Please check your input and try again.";
+            Console.WriteLine($"Error saving debt: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+        }
+        finally
+        {
+            IsSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ClearForm()
+    {
+        DebtForm = new DebtDetails { Date = DateTime.Today };
+        SelectedTag = string.Empty;
+        CustomTag = string.Empty;
+        Tag = string.Empty;
+    }
+
+    private void ClearMessages()
+    {
+        SuccessMessage = string.Empty;
+        ErrorMessage = string.Empty;
     }
 }
